@@ -431,25 +431,27 @@ local function expand_env_vars(s)
 end
 
 local function query_reg_pictures()
-    -- Real Pictures location: respects relocated folders (e.g. D:/Imagenes)
+    -- Real Pictures location: respects relocated folders (e.g. D:/Imagenes).
+    -- subprocess without shell avoids the console flash io.popen causes.
     local keys = {
         "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
         "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
     }
     for _, key in ipairs(keys) do
-        local h = io.popen('reg query "' .. key .. '" /v "My Pictures" 2>NUL')
-        if h then
-            local out = h:read("*a")
-            h:close()
-            if out then
-                local path = out:match("REG_%S+%s+(.-)%s*$")
-                if path and path ~= "" then
-                    path = expand_env_vars(path)
-                    -- unexpanded %VAR% means unknown env: try next key
-                    if not path:find("%%") then
-                        if #path > 3 then path = path:gsub("[/\\]+$", "") end
-                        if path ~= "" then return path end
-                    end
+        local res = utils.subprocess({
+            args = { "reg", "query", key, "/v", "My Pictures" },
+            cancellable = false,
+            capture_stdout = true,
+            capture_stderr = true,
+        })
+        if res and res.status == 0 and res.stdout and res.stdout ~= "" then
+            local path = res.stdout:match("REG_%S+%s+(.-)%s*$")
+            if path and path ~= "" then
+                path = expand_env_vars(path)
+                -- unexpanded %VAR% means unknown env: try next key
+                if not path:find("%%") then
+                    if #path > 3 then path = path:gsub("[/\\]+$", "") end
+                    if path ~= "" then return path end
                 end
             end
         end
