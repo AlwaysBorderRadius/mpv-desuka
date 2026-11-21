@@ -14,7 +14,7 @@
     - unmatched files: S/<quarantine>/<Filename> (N).ext
     - sequential_numbering=no uses mpv %n instead of the literal (N)
     - save_location=pictures[/sub] resolves to the OS Pictures folder
-      (Windows %USERPROFILE%/Pictures, Linux XDG pictures dir).
+      (Windows known folder via registry, Linux XDG pictures dir).
     Custom rules at the top of this file (custom_rules table, priority order).
 --]]
 
@@ -421,15 +421,58 @@ local function get_highest_screenshot_number(directory, prefix)
     return highest
 end
 
+local pictures_dir_cache = nil -- resolved path once known, false when unresolvable
+
+local function expand_env_vars(s)
+    if not s or s == "" then return s end
+    return (s:gsub("%%([^%%]+)%%", function(name)
+        return os.getenv(name) or ("%" .. name .. "%")
+    end))
+end
+
+local function query_reg_pictures()
+    -- Real Pictures location: respects relocated folders (e.g. D:/Imagenes)
+    local keys = {
+        "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
+        "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+    }
+    for _, key in ipairs(keys) do
+        local h = io.popen('reg query "' .. key .. '" /v "My Pictures" 2>NUL')
+        if h then
+            local out = h:read("*a")
+            h:close()
+            if out then
+                local path = out:match("REG_%S+%s+(.-)%s*$")
+                if path and path ~= "" then
+                    path = expand_env_vars(path)
+                    -- unexpanded %VAR% means unknown env: try next key
+                    if not path:find("%%") then
+                        if #path > 3 then path = path:gsub("[/\\]+$", "") end
+                        if path ~= "" then return path end
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
 local function get_pictures_dir()
     local sep = package.config:sub(1, 1)
     if sep == "\\" then
-        -- Windows: physical name is always "Pictures" (no OneDrive, per user choice)
-        local profile = os.getenv("USERPROFILE")
-        if profile and profile ~= "" then
-            return profile:gsub("[/\\]+$", "") .. "/Pictures"
+        -- Windows known folder (relocation-aware), fallback to %USERPROFILE%/Pictures
+        if pictures_dir_cache == nil then
+            pictures_dir_cache = query_reg_pictures()
+            if not pictures_dir_cache then
+                local profile = os.getenv("USERPROFILE")
+                if profile and profile ~= "" then
+                    pictures_dir_cache = profile:gsub("[/\\]+$", "") .. "/Pictures"
+                else
+                    pictures_dir_cache = false
+                end
+            end
         end
-        return nil
+        return pictures_dir_cache or nil
     end
     -- POSIX: XDG pictures dir, fallback to $HOME/Pictures
     local home = os.getenv("HOME")
