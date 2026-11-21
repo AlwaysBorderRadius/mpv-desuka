@@ -60,6 +60,10 @@ opciones, keybinds) + tooling en `.tools/`.
 - No usar `type`/`next` como parámetro o local en Lua: eclipsan a los builtins
   `type()`/`next()` (upstream lo hace en varias funciones; ya nos rompió
   `get_tracklist` una vez).
+- Nada de spawnear terminales en scripts mpv: prohibido `io.popen`/`os.execute`
+  con comandos de consola (flashean ventana en Windows). Usar `mp.utils.subprocess`
+  con args directos (sin shell); si el dato solo existe vía CLI, resolver una vez
+  y cachear en memoria.
 - No añadir `local` a nivel de chunk en `modernx.lua`: el chunk principal
   está en el límite de 200 locales de Lua 5.1 (rompe la carga del script);
   usar globales de script como `track_menu_*`.

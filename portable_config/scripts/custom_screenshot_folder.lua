@@ -33,7 +33,7 @@ local options = {
     jpeg_quality = 95,  -- 0 (worst) to 100 (best)
     sequential_numbering = true,  -- true: keep counting up; false: mpv %n (fills gaps)
     naming_mode = "series",  -- "series" or "season" (separates screenshots by serie or by serie>season)
-    quarantine_name = "_sin-clasificar",  -- folder for unmatched files: S/<quarantine>/<Filename> (N).ext
+    quarantine_name = "_unmatched",  -- folder for unmatched files: S/<quarantine>/<Filename> (N).ext
     log_matched_rule = true,  -- log which custom rule matched (mpv.log)
 }
 (require "mp.options").read_options(options)
@@ -68,8 +68,8 @@ local function validate_user_opts()
     end
     if type(options.quarantine_name) ~= "string" or options.quarantine_name == ""
         or options.quarantine_name:find("[/\\]") then
-        msg.warn("custom_screenshot_folder: bad quarantine_name, fallback to '_sin-clasificar'")
-        options.quarantine_name = "_sin-clasificar"
+        msg.warn("custom_screenshot_folder: bad quarantine_name, fallback to '_unmatched'")
+        options.quarantine_name = "_unmatched"
     end
     if type(options.save_location) ~= "string" or options.save_location == "" then
         msg.warn("custom_screenshot_folder: bad save_location, fallback to '~~/screenshots/'")
@@ -588,7 +588,7 @@ local function init()
             -- Builtin filename-only fallback means no confident match: quarantine
             if season == nil and series == sanitize_filename(fname) and fname ~= "" then
                 state.series = sanitize_filename(options.quarantine_name)
-                if state.series == "" then state.series = "_sin-clasificar" end
+                if state.series == "" then state.series = "_unmatched" end
                 state.season = nil
                 state.quarantined = true
                 state.quarantine_prefix = sanitize_filename(fname)
