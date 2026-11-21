@@ -13,6 +13,8 @@
     - naming_mode=season: S/<Series>/<Season>/<Season> (N).ext
     - unmatched files: S/<quarantine>/<Filename> (N).ext
     - sequential_numbering=no uses mpv %n instead of the literal (N)
+    - save_location=pictures[/sub] resolves to the OS Pictures folder
+      (Windows %USERPROFILE%/Pictures, Linux XDG pictures dir).
     Custom rules at the top of this file (custom_rules table, priority order).
 --]]
 
@@ -419,10 +421,63 @@ local function get_highest_screenshot_number(directory, prefix)
     return highest
 end
 
+local function get_pictures_dir()
+    local sep = package.config:sub(1, 1)
+    if sep == "\\" then
+        -- Windows: physical name is always "Pictures" (no OneDrive, per user choice)
+        local profile = os.getenv("USERPROFILE")
+        if profile and profile ~= "" then
+            return profile:gsub("[/\\]+$", "") .. "/Pictures"
+        end
+        return nil
+    end
+    -- POSIX: XDG pictures dir, fallback to $HOME/Pictures
+    local home = os.getenv("HOME")
+    if not home or home == "" then return nil end
+    local xdg_pics = os.getenv("XDG_PICTURES_DIR")
+    if xdg_pics and xdg_pics ~= "" then return xdg_pics end
+    local cfg = os.getenv("XDG_CONFIG_HOME")
+    if not cfg or cfg == "" then cfg = home .. "/.config" end
+    local f = io.open(cfg .. "/user-dirs.dirs", "r")
+    if f then
+        for line in f:lines() do
+            local raw = line:match("^%s*XDG_PICTURES_DIR%s*=%s*(.-)%s*$")
+            if raw then
+                raw = raw:gsub("%s*#.*$", "")
+                raw = raw:gsub('^"(.*)"$', "%1"):gsub("^'(.-)'$", "%1")
+                raw = raw:gsub("%${HOME}", home):gsub("%$HOME", home)
+                if raw:sub(1, 1) == "~" then raw = home .. raw:sub(2) end
+                raw = raw:gsub("[/\\]+$", "")
+                f:close()
+                -- "$HOME" alone means disabled per XDG spec: fall back
+                if raw ~= "" and raw ~= home then return raw end
+                return home .. "/Pictures"
+            end
+        end
+        f:close()
+    end
+    return home .. "/Pictures"
+end
+
 local function expand_save_location()
-    local save = mp.command_native({ "expand-path", options.save_location })
-    if not save or save == "" then save = options.save_location end
-    return save
+    local save = options.save_location or ""
+    local lowered = save:lower()
+    if lowered == "pictures" or lowered:sub(1, 9) == "pictures/"
+        or lowered:sub(1, 9) == "pictures\\" then
+        local pics = get_pictures_dir()
+        if not pics or pics == "" then
+            msg.warn("custom_screenshot_folder: could not resolve Pictures folder, fallback to '~~/screenshots/'")
+            local fb = mp.command_native({ "expand-path", "~~/screenshots/" })
+            if fb and fb ~= "" then return fb end
+            return options.save_location
+        end
+        local rest = save:sub(9):gsub("^[/\\]+", "")
+        if rest == "" then return pics end
+        return pics .. "/" .. rest
+    end
+    local expanded = mp.command_native({ "expand-path", save })
+    if not expanded or expanded == "" then expanded = save end
+    return expanded
 end
 
 local function current_target()
