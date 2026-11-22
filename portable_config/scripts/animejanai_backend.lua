@@ -8,6 +8,11 @@
 --   DirectML  -> D3D11 frames (hwdec=d3d11va, D3D11 VO: mpv has no
 --                D3D11->Vulkan interop, so a Vulkan VO would hw-download
 --                every output frame)
+--   Vulkan    -> Windows: D3D11 frames too: libaji's Vulkan backend runs on
+--                DirectML's D3D11/D3D12 frame pipeline (and runs models
+--                without Vulkan kernels on DirectML itself).
+--                Linux: Vulkan frames (hwdec=vulkan, Vulkan VO): libaji runs
+--                on the decoder's own Vulkan device.
 -- (backend=ncnn is retired and treated as DirectML by the shim.)
 --
 -- mpv.conf carries the TensorRT defaults (hwdec=nvdec,
@@ -90,10 +95,11 @@ local function exists(rel)
     return false
 end
 
--- The shared pack store's aji-runtime.json, which the updater has aji-runtime
--- write beside libaji: the folders libaji loads TensorRT and its builder kernels
--- from. nil without it (an install from before the store, or the AppImage):
--- then they are in the inference folder.
+-- The pack store's aji-runtime.json, which the updater has aji-runtime write
+-- beside libaji: the folders libaji loads TensorRT and its builder kernels
+-- from (absolute, or relative to the file when the store is inside this
+-- install: a portable copy that can be moved). nil without it (an install from
+-- before the store, or the AppImage): then they are in the inference folder.
 local function runtime_packs()
     local inf = mp.command_native({'expand-path', '~~/../animejanai/inference'})
     local f = io.open(utils.join_path(inf, 'aji-runtime.json'), 'rb')
@@ -133,11 +139,13 @@ local function trt_runtime_installed()
     return exists('animejanai/inference/' .. nvinfer)
 end
 
--- The shared pack store's folder when it has been moved and is missing (a
--- drive that isn't connected): then TensorRT only looks uninstalled, its packs
--- are on that drive. From `aji-runtime location --json` (aji-runtime 0.2.0+,
--- at the install root, or in the AppImage), asked only when aji-runtime.json
--- names a TensorRT pack that isn't there. nil otherwise; checked once.
+-- The pack store's folder when it is missing (a drive that isn't connected):
+-- the per-user store moved to another drive, or a folder chosen in AnimeJaNai
+-- Manager > Components > Storage. Then TensorRT only looks uninstalled, its
+-- packs are on that drive. From `aji-runtime location --json` (aji-runtime
+-- 0.2.0+, at the install root, or in the AppImage), asked only when
+-- aji-runtime.json names a TensorRT pack that isn't there. nil otherwise;
+-- checked once.
 local store_missing_checked, store_missing_folder
 local function trt_store_missing()
     if store_missing_checked then
@@ -169,18 +177,21 @@ local function trt_store_missing()
         return nil
     end
     local t = utils.parse_json(r.stdout or '')
-    if type(t) == 'table' and t.moved == true and t.available == false then
-        store_missing_folder = type(t.target) == 'string' and t.target or '?'
+    if type(t) == 'table' and t.available == false then
+        -- a moved per-user store's files are in its target; any other store's
+        -- in its root
+        local folder = t.moved == true and t.target or t.root
+        store_missing_folder = type(folder) == 'string' and folder or '?'
     end
     return store_missing_folder
 end
 
 local function store_missing_hint(folder)
-    local where = os.getenv('ANIMEJANAI_APPIMAGE') == '1'
-        and 'the JaNai app you moved it with'
-        or 'AnimeJaNai Manager (Ctrl+E) > Components > Storage'
-    return 'The shared runtime\'s folder ' .. folder .. ' isn\'t available. ' ..
-        'Is its drive connected? Reconnect it, or reset the location in ' .. where
+    local fix = os.getenv('ANIMEJANAI_APPIMAGE') == '1'
+        and 'reset the location in the JaNai app you moved it with'
+        or 'choose another place in AnimeJaNai Manager (Ctrl+E) > Components > Storage'
+    return 'The TensorRT runtime\'s folder ' .. folder .. ' isn\'t available. ' ..
+        'Is its drive connected? Reconnect it, or ' .. fix
 end
 
 -- Whether a TensorRT builder (kernel) pack is installed: in the store when
@@ -499,10 +510,13 @@ if backend == 'tensorrt' and mp.get_property('platform') == 'windows' then
         trt_unavailable = too_old_message(old) .. '. Select DirectML in AnimeJaNai Manager (Ctrl+E)'
     end
 elseif backend == 'tensorrt' then
-    -- Linux: TensorRT is the only backend, so a GPU too old for it can't upscale
+    -- Linux: TensorRT, or Vulkan where the engine has it (libaji_vk.so)
     local ok, old = trt_gpus()
     if ok and #ok == 0 and #old > 0 then
-        trt_unavailable = too_old_message(old) .. ', the only upscaling engine on Linux'
+        trt_unavailable = too_old_message(old) ..
+            (exists('animejanai/inference/libaji_vk.so')
+                and '. Select Vulkan in AnimeJaNai Manager (Ctrl+E)'
+                or ', the only upscaling engine on Linux')
     end
 end
 if trt_unavailable then
@@ -513,13 +527,24 @@ if trt_unavailable then
 end
 
 local hwdec = 'nvdec'
--- DirectML/ncnn use D3D11 frames (hwdec=d3d11va, gpu-api=d3d11). Windows-only:
--- there is no D3D11 on Linux, where only the TensorRT (CUDA/nvdec) backend
--- exists, so this branch is guarded behind the platform.
-if (backend == 'directml' or backend == 'ncnn')
+local is_vulkan = backend == 'vulkan' or backend == 'vk'
+-- DirectML/ncnn and Vulkan use D3D11 frames (hwdec=d3d11va, gpu-api=d3d11).
+-- Windows-only: there is no D3D11 on Linux, so this branch is guarded behind
+-- the platform.
+if (backend == 'directml' or backend == 'ncnn' or is_vulkan)
         and mp.get_property('platform') == 'windows' then
     hwdec = 'd3d11va'
     mp.set_property('gpu-api', 'd3d11')
+elseif is_vulkan then
+    -- Linux: Vulkan frames on the decoder's device, which is the VO's: the
+    -- filter needs both on Vulkan (mpv's default device, the GPU choice being
+    -- Auto here)
+    hwdec = 'vulkan'
+    mp.set_property('gpu-api', 'vulkan')
+    if not exists('animejanai/inference/libaji_vk.so') then
+        fallback_hint = 'The Vulkan backend is not in this install - ' ..
+            'press Ctrl+E to open AnimeJaNai Manager'
+    end
 end
 
 -- Which GPU upscales. The Manager writes [global] gpu_tensorrt (a Vulkan device
@@ -563,7 +588,7 @@ if hwdec == 'nvdec' then
     elseif new_enough and unset('vulkan-device') then
         apply_gpu('vulkan-device', new_enough.uuid)
     end
-elseif unset('d3d11-adapter') then
+elseif hwdec == 'd3d11va' and unset('d3d11-adapter') then
     if gpu_choice.directml then
         apply_gpu('d3d11-adapter', gpu_choice.directml)
     elseif mp.get_property('d3d11-adapter-preference') == 'default' then
@@ -576,7 +601,8 @@ elseif unset('d3d11-adapter') then
 end
 mp.set_property('hwdec', hwdec)
 msg.info(string.format('backend %s -> hwdec=%s%s', backend, hwdec,
-                       hwdec == 'd3d11va' and ', gpu-api=d3d11' or ''))
+                       hwdec == 'd3d11va' and ', gpu-api=d3d11' or
+                       hwdec == 'vulkan' and ', gpu-api=vulkan' or ''))
 
 -- Opt-in GPU subtitle rendering: only ever applied on top of the stable
 -- defaults, never the reverse, so a user who set any of these options in

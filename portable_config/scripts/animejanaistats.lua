@@ -1,13 +1,14 @@
 local open = io.open
 
 local showingMessage = false
+local MAX_DURATION = 2147483
 
 -- >>> CUSTOM Desuka: route stats and failure alerts through modernx toasts <<<
 -- Toggle shows a persistent toast (preemptive, source-aware clear). A filter
 -- failure while showing replaces it; while hidden it fires a timed error.
 -- NOTE: AJN updater overwrites portable_config/scripts/ on update
 -- (manifest.json overlay_paths). After any AJN update: git status, diff this
--- file, re-apply this CUSTOM block. Path tracks v3.11 layout (no core/).
+-- file, re-apply this CUSTOM block. Path tracks v3.12.5 layout.
 -- <<< CUSTOM Desuka >>>
 
 -- Why upscaling stopped during playback, or nil. When the filter fails (an
@@ -65,6 +66,39 @@ end
 mp.register_event("start-file", clear)
 mp.observe_property("vf", "native", clear)
 
+-- Held-frame reuse, from the filter's stats line "held frames: reused <r> of
+-- <n>" (a share such as "(30.9%)" may follow): of the <n> frames it decided,
+-- <r> got the previous frame's upscale again instead of running the model.
+-- The line becomes "Reused: 31% of frames". The filter only writes it while
+-- reuse applies, so without it (reuse turned off, RIFE or a temporal model,
+-- an older filter) nothing is shown; a line that doesn't add up is dropped.
+local function reuse_percent(reused, frames)
+    local pct = math.floor(100 * reused / frames + 0.5)
+    if pct == 0 and reused > 0 then
+        return "<1%"
+    end
+    return pct .. "%"
+end
+
+local function format_stats(content)
+    if content == nil then
+        return nil
+    end
+    local out = {}
+    for line, eol in content:gmatch("([^\r\n]*)(\r?\n?)") do
+        local reused, frames = line:match("held frames:%s*reused%s+(%d+)%s+of%s+(%d+)")
+        if reused then
+            reused, frames = tonumber(reused), tonumber(frames)
+            if frames > 0 and reused <= frames then
+                out[#out + 1] = "Reused: " .. reuse_percent(reused, frames) .. " of frames" .. eol
+            end
+        else
+            out[#out + 1] = line .. eol
+        end
+    end
+    return table.concat(out)
+end
+
 -- Function to be called when the custom action is triggered
 function show_animejanai_stats()
     if showingMessage then
@@ -79,7 +113,7 @@ function show_animejanai_stats()
             message = stopped_message()
         else
             local data_file_path = (mp.command_native({'expand-path', "~~/../animejanai/currentanimejanai.log"}))
-            message = read_file(data_file_path)
+            message = format_stats(read_file(data_file_path))
 
             if message == "" or message == nil then -- >>> EDIT Desuka <<< -- missing log file returns nil
                 message = "Error during upscale; press ~ to view error in console"
@@ -101,6 +135,5 @@ function read_file(path)
 end
 
 
--- >>> CUSTOM Desuka: key owned by input.conf (Ctrl+j), keep unbound for upstream diff <<<
-mp.add_key_binding(nil, "show_animejanai_stats", show_animejanai_stats)
--- <<< CUSTOM Desuka >>>
+-- Register the custom action to a key binding (e.g., "Ctrl+Shift+C")
+mp.add_key_binding("Ctrl+j", "show_animejanai_stats", show_animejanai_stats)
