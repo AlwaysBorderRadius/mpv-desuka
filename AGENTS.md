@@ -91,7 +91,8 @@ automático. A `main` solo por merge explícito `[vN] merge dev` + tag anotado
   (sin fallback inventado).
 - Artefactos: `mpv-desuka-vN-ajn-vM-full.7z` (contenedor `mpv desuka\`) +
   `mpv-desuka-vN-ajn-vM-patch.zip` (plano, overlay sobre AJN) +
-  `mpv-desuka-vN-dev.zip` (contenido del patch + extras dev, sin base AJN).
+  `mpv-desuka-vN-dev.zip` (contenido del patch pre-flips + extras dev, sin base AJN;
+  configs en valores dev).
   Los genera `.tools/New-DesukaRelease.ps1` (local, gitignored); salida en `.dist\vN\` (gitignored).
 - Orden: `/changelog-preview` (dev, sin efectos) → README ES (en web apuntar a `dev`) →
   `/translate` (EN, al final) → merge `[vN]` + tag lockstep → `/release` (solo draft,
