@@ -1,7 +1,7 @@
 local open = io.open
 
 local showingMessage = false
-local MAX_DURATION = 2147483
+-- local MAX_DURATION = 2147483 -- unused: stats go through persistent toasts now (kept for upstream diff)
 
 -- >>> CUSTOM Desuka: route stats and failure alerts through modernx toasts <<<
 -- Toggle shows a persistent toast (preemptive, source-aware clear). A filter
@@ -102,7 +102,7 @@ end
 -- Function to be called when the custom action is triggered
 function show_animejanai_stats()
     if showingMessage then
-        mp.commandv("script-message-to", "modernx", "modernx-toast-clear", "animejanai")
+        mp.commandv("script-message-to", "modernx", "modernx-toast-clear", "animejanai") -- >>> EDIT Desuka <<< -- clear via toast, not OSD
         showingMessage = false
     else
         local message = ""
@@ -120,7 +120,7 @@ function show_animejanai_stats()
             end
         end
 
-        mp.commandv("script-message-to", "modernx", "modernx-toast",
+        mp.commandv("script-message-to", "modernx", "modernx-toast", -- >>> EDIT Desuka <<< -- persistent toast instead of MAX_DURATION OSD
             "persistent", "animejanai", message)
         showingMessage = true
     end
