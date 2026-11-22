@@ -90,8 +90,9 @@ automático. A `main` solo por merge explícito `[vN] merge dev` + tag anotado
   `version.txt` = base AJN, solo para filenames/notas. `update_checker.lua` default `""` + fail-fast
   (sin fallback inventado).
 - Artefactos: `mpv-desuka-vN-ajn-vM-full.7z` (contenedor `mpv desuka\`) +
-  `mpv-desuka-vN-ajn-vM-patch.zip` (plano, overlay sobre AJN). Los genera
-  `.tools/New-DesukaRelease.ps1` (local, gitignored); salida en `.dist\vN\` (gitignored).
+  `mpv-desuka-vN-ajn-vM-patch.zip` (plano, overlay sobre AJN) +
+  `mpv-desuka-vN-dev.zip` (`git archive` + `.tools/`, backup de fuente sin binarios).
+  Los genera `.tools/New-DesukaRelease.ps1` (local, gitignored); salida en `.dist\vN\` (gitignored).
 - Orden: `/changelog-preview` (dev, sin efectos) → README ES (en web apuntar a `dev`) →
   `/translate` (EN, al final) → merge `[vN]` + tag lockstep → `/release` (solo draft,
   jamás publish) → pulir draft en web → publish manual. Cuerpos editados a mano se
