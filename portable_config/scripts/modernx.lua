@@ -6670,11 +6670,28 @@ function shader_state()
     return { a4k = a4k, ajn = ajn }
 end
 
+-- Display name for a V3.1 preset with its Sharp/Standard variant.
+-- The Manager writes quality/balanced/performance_preset=sharp, and deletes
+-- the line for Standard, so missing means Standard, not unknown.
+function ajn_preset_variant(slot)
+    local key = nil
+    if slot == 1001 then key = "quality_preset"
+    elseif slot == 1002 then key = "balanced_preset"
+    elseif slot == 1003 then key = "performance_preset"
+    else return nil end
+    local presets = ajn_slot_presets()
+    local v = presets and presets[key] or nil
+    if type(v) == "string" and v:match("^%s*(.-)%s*$"):lower() == "sharp" then
+        return "Sharp"
+    end
+    return "Standard"
+end
+
 -- Display name for an AJN slot: V3.1 presets, live profile names, Custom N, off = nil.
 function ajn_slot_label(slot)
-    if slot == 1001 then return "Quality V3.1"
-    elseif slot == 1002 then return "Balanced V3.1"
-    elseif slot == 1003 then return "Performance V3.1"
+    if slot == 1001 then return "Quality V3.1 (" .. ajn_preset_variant(1001) .. ")"
+    elseif slot == 1002 then return "Balanced V3.1 (" .. ajn_preset_variant(1002) .. ")"
+    elseif slot == 1003 then return "Performance V3.1 (" .. ajn_preset_variant(1003) .. ")"
     elseif slot and slot > 0 then
         local name = ajn_slot_names()[slot]
         if name and name ~= "" then return name end
@@ -6760,45 +6777,69 @@ mp.register_script_message("aji-slot", function(slot)
     if n then aji_slot_tracked = n end
 end)
 
--- Live AnimeJaNai custom profile names ([slot_N] profile_name), mtime-cached
--- so hover tooltips can call it every frame without re-reading the file.
-ajn_slot_cache = { path = nil, mtime = nil, names = {} }
+-- Live AnimeJaNai slot data ([slot_N] profile_name + [global] presets),
+-- mtime-cached so hover tooltips can call it every frame without re-reading.
+ajn_slot_cache = { path = nil, mtime = nil, names = {}, presets = {} }
 
-function ajn_slot_names()
-    local names = {}
+function ajn_slot_data()
+    local names, presets = {}, {}
     local ok, path = pcall(mp.command_native, { "expand-path", "~~/../animejanai/animejanai.conf" })
-    if not ok or type(path) ~= "string" or path == "" then return names end
+    if not ok or type(path) ~= "string" or path == "" then return names, presets end
     local info = mp.utils.file_info(path)
     local mtime = info and info.mtime or nil
     if ajn_slot_cache.path == path and ajn_slot_cache.mtime == mtime then
-        return ajn_slot_cache.names
+        return ajn_slot_cache.names, ajn_slot_cache.presets
     end
     local f = io.open(path, "r")
     if f then
-        local slot = nil
+        local slot, in_global = nil, false
         for line in f:lines() do
             line = line:gsub("\r$", "")
-            local sec = line:match("^%[slot_(%d+)%]")
+            local sec = line:match("^%[(.-)%]")
             if sec then
-                slot = tonumber(sec)
-            else
+                local n = sec:match("^slot_(%d+)$")
+                slot = n and tonumber(n) or nil
+                in_global = sec == "global"
+            elseif in_global then
+                local k, v = line:match("^([a-z_]+)%s*=%s*(.-)%s*$")
+                if k == "quality_preset" or k == "balanced_preset" or k == "performance_preset" then
+                    presets[k] = v
+                end
+            elseif slot then
                 local name = line:match("^profile_name=(.-)%s*$")
-                if slot and name and name ~= "" and name ~= "New Profile" then names[slot] = name end
+                if name and name ~= "" and name ~= "New Profile" then names[slot] = name end
             end
         end
         f:close()
     end
-    ajn_slot_cache.path, ajn_slot_cache.mtime, ajn_slot_cache.names = path, mtime, names
+    ajn_slot_cache.path, ajn_slot_cache.mtime = path, mtime
+    ajn_slot_cache.names, ajn_slot_cache.presets = names, presets
+    return names, presets
+end
+
+function ajn_slot_names()
+    local names = ajn_slot_data()
     return names
 end
 
--- Display leaf for AnimeJaNai custom slot rows (both dropdowns share the tree).
--- First claim wins: duplicate profile names keep their "Custom N" label so no
--- two rows collapse into one command via the tree's later-wins dedup.
+function ajn_slot_presets()
+    local _, presets = ajn_slot_data()
+    return presets
+end
+
+-- Display leaf for AnimeJaNai slot rows (both dropdowns share the tree).
+-- V3.1 presets show their Sharp/Standard variant; custom slots show the live
+-- profile name. First claim wins: duplicate profile names keep their
+-- "Custom N" label so no two rows collapse into one command via the tree's
+-- later-wins dedup.
 -- Empty slots (blank/"New Profile": no entry in names) return "": the tree
 -- skips empty leaves, so they stay out of the menu while Ctrl+1..9 still work.
 function ajn_slot_leaf(segs, leaf, names, parent)
     if #segs == 3 and segs[1] == "AnimeJaNai" and segs[2] == "Slots" then
+        if leaf == "Quality V3.1" then return ajn_slot_label(1001)
+        elseif leaf == "Balanced V3.1" then return ajn_slot_label(1002)
+        elseif leaf == "Performance V3.1" then return ajn_slot_label(1003)
+        end
         local n = leaf:match("^Custom (%d+)$")
         if n then
             local name = names and names[tonumber(n)]
