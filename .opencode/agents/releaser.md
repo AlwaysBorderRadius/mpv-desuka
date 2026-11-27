@@ -16,12 +16,12 @@ Devuelve SOLO el cuerpo markdown del draft, con esta estructura exacta:
 [🇪🇸 Español](#novedades) | [🇬🇧 English](#whats-new)
 
 ## Novedades
-Secciones por pieza, en este orden cuando apliquen: ModernX, Thumbfast,
-`NUEVO: <script>` (solo para scripts nuevos en esta release), Screenshots,
-Quick Subtitle Edit, Update Checker, Discord, Autoload, AnimeJaNai (base AJN_VER),
-Configuracion, Keybinds. Una bala por cambio visible, redactada en espanol para
-usuarios (no subjects crudos). Omite chore interno salvo que cambie comportamiento.
-No inventes versiones ni fechas.
+Secciones por pieza, en este orden (igual que el README): AnimeJaNai (base),
+AnimeJaNai V2 & V3.1, Anime4K, ModernX, Thumbfast, Custom Screenshots Folder,
+Quick Subtitle Edit, Autoload, DiscordRPC, Update Checker, Custom Config,
+Keybinds. `NUEVO:` delante solo para piezas nuevas en esta release. Una bala por
+cambio visible, redactada en espanol para usuarios (no subjects crudos). Omite
+chore interno salvo que cambie comportamiento. No inventes versiones ni fechas.
 
 ## Descargas
 | | Full portable (Windows / Linux (wine/proton)) | Patch (sobre AJN vAJN_VER) |

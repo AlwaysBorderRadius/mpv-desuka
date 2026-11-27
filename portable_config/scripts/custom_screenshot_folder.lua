@@ -1,9 +1,9 @@
 --[[
     Per-series screenshot folders with sequential numbering.
 
-    Mix of:
-    - https://github.com/zydezu/mpvconfig/blob/main/scripts/screenshotfolder.lua
-    - https://github.com/jonniek/mpv-scripts/blob/master/customscreenshot.lua
+    Mix of (@ = commit pineado para diffs futuros):
+    - https://github.com/zydezu/mpvconfig/blob/main/scripts/screenshotfolder.lua @ f9b38cf (Jul 10, 2026)
+    - https://github.com/jonniek/mpv-scripts/blob/master/customscreenshot.lua @ bc8bfe2 (Apr 6, 2019)
 
     Rewritten for mpv Desuka: Series/Season extraction from path, naming modes,
     portable save_location, validated options, custom rules file, quarantine fallback.

@@ -72,7 +72,9 @@ opciones, keybinds) + tooling en `.tools/`.
   estilo/sección `menu-controls` y comparte visual `track_menu_*`).
   El `show-menu` nativo de mpvnet no sirve aquí: lo suprime cerca de
   los bordes (zonas muertas 10% laterales/superior, 22% inferior).
-- Las líneas `Version:` del README (piezas upstream) deben coincidir con cabeceras `Upstream:`, `version.txt`/`manifest.json` y `shaders/UPSTREAM`; se auditan en el paso 0 de `/release`.
+- Las líneas `Version:` del README.es.md (piezas upstream; el README.md en inglés es
+  espejo vía /translate) deben coincidir con cabeceras `Upstream:`,
+  `version.txt`/`manifest.json` y `shaders/UPSTREAM`; se auditan en el paso 0 de `/release`.
 - README.md = EN (portada), README.es.md = ES, con enlaces cruzados.
 - Los `.conf` de `portable_config/` se commitean en cada rama como parte del
   estado portable (incluidos `mpv.conf`, `discord.conf` y `update_checker.conf`
