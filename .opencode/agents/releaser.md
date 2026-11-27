@@ -17,7 +17,7 @@ Devuelve SOLO el cuerpo markdown del draft, con esta estructura exacta:
 
 ## Novedades
 Secciones por pieza, en este orden (igual que el README): AnimeJaNai (base),
-AnimeJaNai V2 & V3.1, Anime4K, ModernX, Thumbfast, Custom Screenshots Folder,
+AnimeJaNai V2, V3.1 & SD V1, Anime4K, ModernX, Thumbfast, Custom Screenshots Folder,
 Quick Subtitle Edit, Autoload, DiscordRPC, Update Checker, Custom Config,
 Keybinds. `NUEVO:` delante solo para piezas nuevas en esta release. Una bala por
 cambio visible, redactada en espanol para usuarios (no subjects crudos). Omite

@@ -12,8 +12,11 @@ Flujo /release (el agente principal lo ejecuta paso a paso, nada es automatico):
    - Anime4K -> portable_config/shaders/UPSTREAM.
    - Custom Screenshots Folder -> comentario `Mix of` con pins en
      portable_config/scripts/custom_screenshot_folder.lua.
-   - Base AJN -> version.txt == manifest.json package_version == AJN_VER.
-   - V2 ModelsOnly -> presencia de los 3 `V2_*.onnx` en animejanai/onnx (+ AGENTS.md).
+   - V2/V3.1/SD V1 -> presencia en animejanai/onnx/ (3x `V2_*.onnx`, 4x `*V3.1_*.onnx`,
+     1x `*SD_V1_*.onnx`, 3x `temporalfix_*.onnx`) + URL ModelsOnly en el README.
+   (Se audita hash/pines, no fechas del README.)
+   - Base AJN -> AJN_VER = version.txt:1; exige version.txt == manifest.json
+     package_version == AJN_VER.
 1. Precondiciones: rama `dev` limpia de lo que se va a publicar, README.es.md ya editado
    (vale editarlo en la web de GitHub apuntando a rama `dev`), `current_version` en
    portable_config/script-opts/update_checker.conf igual al tag previsto. Si el ES del

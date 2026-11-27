@@ -74,7 +74,9 @@ opciones, keybinds) + tooling en `.tools/`.
   los bordes (zonas muertas 10% laterales/superior, 22% inferior).
 - Las líneas `Version:` del README.es.md (piezas upstream; el README.md en inglés es
   espejo vía /translate) deben coincidir con cabeceras `Upstream:`,
-  `version.txt`/`manifest.json` y `shaders/UPSTREAM`; se auditan en el paso 0 de `/release`.
+  `version.txt`/`manifest.json`, `shaders/UPSTREAM`, comentario `Mix of` con pins en
+  `custom_screenshot_folder.lua` y presencia `onnx` (V2/V3.1/SD V1/temporalfix);
+  se auditan en el paso 0 de `/release` (hash/pines, no fechas).
 - README.md = EN (portada), README.es.md = ES, con enlaces cruzados.
 - Los `.conf` de `portable_config/` se commitean en cada rama como parte del
   estado portable (incluidos `mpv.conf`, `discord.conf` y `update_checker.conf`
