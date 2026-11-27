@@ -28,6 +28,8 @@ Flujo /release (el agente principal lo ejecuta paso a paso, nada es automatico):
 4. Cuerpo del draft: delega en el subagente `releaser` pasandole en el prompt el LOG
    (`git log --no-color <ultimo-publicado>..vN --oneline`), DESUKA_VER, AJN_VER
    (version.txt), FULL_NAME, PATCH_NAME y AJN_URL. Guarda su salida en `.dist/vN-body.md`.
+   Relee el ES antes de seguir (ortografia, links, placeholders): no pases al paso 5
+   con texto pendiente de pulir.
 5. `gh release create vN --draft --title "vN" -F .dist/vN-body.md <full> <patch>`
    (dev.zip NO se sube: backup local).
    Si existe draft del MISMO tag: respalda su cuerpo en `.dist/` y actualiza in place

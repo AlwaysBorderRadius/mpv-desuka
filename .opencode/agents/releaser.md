@@ -46,3 +46,5 @@ TODO-EN-TABLE: english mirror of Descargas, filled by /translate.
 
 Reglas: espanol primero, nada de publicar (el draft lo crea /release via gh, siempre
 --draft). Los enlaces de assets siguen el patron fijo .../releases/download/vN/archivo.
+Relee tu ES al final (ortografia, links rotos, placeholders tipo [X]): el draft no se
+entrega con texto pendiente de pulir.
