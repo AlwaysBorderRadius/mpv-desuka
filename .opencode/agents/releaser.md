@@ -13,11 +13,15 @@ Si el rango del LOG no sirve, dilo y pide otro en vez de inventar.
 
 Devuelve SOLO el cuerpo markdown del draft, con esta estructura exacta:
 
+[🇪🇸 Español](#novedades) | [🇬🇧 English](#whats-new)
+
 ## Novedades
-Agrupa los commits por area (ModernX/OSC, pistas y banderas, shaders y slots AnimeJaNai,
-screenshots, menus, update-checker, discord, repo/conf). Una bala por cambio visible,
-redactada en espanol para usuarios (no subjects crudos). Omite chore interno salvo que
-cambie comportamiento. No inventes versiones ni fechas.
+Secciones por pieza, en este orden cuando apliquen: ModernX, Thumbfast,
+`NUEVO: <script>` (solo para scripts nuevos en esta release), Screenshots,
+Quick Subtitle Edit, Update Checker, Discord, Autoload, AnimeJaNai (base AJN_VER),
+Configuracion, Keybinds. Una bala por cambio visible, redactada en espanol para
+usuarios (no subjects crudos). Omite chore interno salvo que cambie comportamiento.
+No inventes versiones ni fechas.
 
 ## Descargas
 | | Full portable (Windows / Linux (wine/proton)) | Patch (sobre AJN vAJN_VER) |
@@ -27,6 +31,10 @@ cambie comportamiento. No inventes versiones ni fechas.
 
 Base probada: [AJN vAJN_VER](AJN_URL). No mezclar con otra base; si AJN publica cambios
 mayores, esperar la actualizacion desuka correspondiente.
+
+---
+---
+---
 
 ## What's new
 <details><summary>English</summary>
