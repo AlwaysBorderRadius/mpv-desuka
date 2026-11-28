@@ -8,7 +8,7 @@ local showingMessage = false
 -- failure while showing replaces it; while hidden it fires a timed error.
 -- NOTE: AJN updater overwrites portable_config/scripts/ on update
 -- (manifest.json overlay_paths). After any AJN update: git status, diff this
--- file, re-apply this CUSTOM block. Path tracks v3.12.5 layout.
+-- file, re-apply this CUSTOM block. Path tracks v3.12.6 layout.
 -- <<< CUSTOM Desuka >>>
 
 -- Why upscaling stopped during playback, or nil. When the filter fails (an
